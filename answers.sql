@@ -1,105 +1,48 @@
--- Database Design and Normalization Assignment
--- Author: Neo Mokoele
--- Date: April 2025
-
--- Question 1: Achieving 1NF (First Normal Form)
-
--- Create a new table in 1NF by splitting Products into individual rows
-CREATE TABLE ProductDetail_1NF (
-    OrderID INT,
-    CustomerName VARCHAR(100),
-    Product VARCHAR(50)
-);
-
--- Insert normalized data into ProductDetail_1NF
-INSERT INTO ProductDetail_1NF (OrderID, CustomerName, Product)
-VALUES 
-(101, 'John Doe', 'Laptop'),
-(101, 'John Doe', 'Mouse'),
-(102, 'Jane Smith', 'Tablet'),
-(102, 'Jane Smith', 'Keyboard'),
-(102, 'Jane Smith', 'Mouse'),
-(103, 'Emily Clark', 'Phone');
-
--- Question 2: Achieving 2NF (Second Normal Form)
-
--- Step 1: Create an Orders table to store OrderID and CustomerName
+-- Step 1: Create the main Orders table
 CREATE TABLE Orders (
     OrderID INT PRIMARY KEY,
     CustomerName VARCHAR(100)
 );
 
--- Step 2: Create a separate OrderProducts table with full dependency on (OrderID, Product)
-CREATE TABLE OrderProducts (
-    OrderID INT,
-    Product VARCHAR(50),
-    Quantity INT,
-    PRIMARY KEY (OrderID, Product),
-    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID)
-);
-
--- Step 3: Insert data into Orders table (no redundancy of CustomerName)
+-- Step 2: Insert Order and Customer data
 INSERT INTO Orders (OrderID, CustomerName)
-VALUES 
+VALUES
 (101, 'John Doe'),
 (102, 'Jane Smith'),
 (103, 'Emily Clark');
 
--- Step 4: Insert data into OrderProducts table (each row now fully depends on full primary key)
-INSERT INTO OrderProducts (OrderID, Product, Quantity)
-VALUES 
-(101, 'Laptop', 2),
-(101, 'Mouse', 1),
-(102, 'Tablet', 3),
-(102, 'Keyboard', 1),
-(102, 'Mouse', 2),
-(103, 'Phone', 1);
-
--- Question 3: Achieving 3NF (Third Normal Form)
-
--- Create a table for Customer details that eliminates transitive dependencies
-CREATE TABLE Customers (
-    CustomerID INT PRIMARY KEY AUTO_INCREMENT,
-    CustomerName VARCHAR(100)
+-- Step 3: Create the Product table to store unique products per order
+CREATE TABLE Product (
+    ProductID INT PRIMARY KEY AUTO_INCREMENT,
+    ProductName VARCHAR(100)
 );
 
--- Create a new table for OrderDetails (removes transitive dependency)
-CREATE TABLE OrderDetails (
+-- Step 4: Insert product names (no duplicates)
+INSERT INTO Product (ProductName)
+VALUES
+('Laptop'),
+('Mouse'),
+('Tablet'),
+('Keyboard'),
+('Phone');
+
+-- Step 5: Create a linking table between Orders and Products with Quantity
+CREATE TABLE OrderProduct (
     OrderID INT,
-    CustomerID INT,
-    Product VARCHAR(50),
+    ProductID INT,
     Quantity INT,
-    PRIMARY KEY (OrderID, Product),
+    PRIMARY KEY (OrderID, ProductID),
     FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
-    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+    FOREIGN KEY (ProductID) REFERENCES Product(ProductID)
 );
 
--- Step 1: Insert data into Customers table
-INSERT INTO Customers (CustomerName)
-VALUES 
-('John Doe'),
-('Jane Smith'),
-('Emily Clark');
-
--- Step 2: Link the Orders table with the Customers table using CustomerID
--- Update Orders table to store CustomerID instead of CustomerName
-ALTER TABLE Orders ADD COLUMN CustomerID INT;
-
-UPDATE Orders o
-JOIN Customers c ON o.CustomerName = c.CustomerName
-SET o.CustomerID = c.CustomerID;
-
--- Drop the redundant CustomerName column in the Orders table
-ALTER TABLE Orders DROP COLUMN CustomerName;
-
--- Step 3: Insert data into OrderDetails table
-INSERT INTO OrderDetails (OrderID, CustomerID, Product, Quantity)
-VALUES 
-(101, 1, 'Laptop', 2),
-(101, 1, 'Mouse', 1),
-(102, 2, 'Tablet', 3),
-(102, 2, 'Keyboard', 1),
-(102, 2, 'Mouse', 2),
-(103, 3, 'Phone', 1);
-
--- The database is now in 3NF with no transitive dependencies
+-- Step 6: Map the orders to their products with quantities
+-- Assuming ProductID mapping: Laptop=1, Mouse=2, Tablet=3, Keyboard=4, Phone=5
+INSERT INTO OrderProduct (OrderID, ProductID, Quantity)
+VALUES
+(101, 1, 2),  -- John Doe - Laptop
+(101, 2, 1),  -- John Doe - Mouse
+(102, 3, 3),  -- Jane Smith - Tablet
+(102, 4, 1),  -- Jane Smith - Keyboard
+(102, 2, 2),  -- Jane Smith - Mouse
+(103, 5, 1);  -- Emily Clark - Phone
